@@ -1,0 +1,1 @@
+# langchain-embedding-storing-lab
