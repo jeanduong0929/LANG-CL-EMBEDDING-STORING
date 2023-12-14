@@ -25,9 +25,12 @@ def get_pdf_text(pdf_path: str) -> str:
     The text from the PDF file should be extracted and returned as a string.
 
     Instructions:
+    - Raise a FileNotFoundError if the PDF file is not found at the given path.
     - Use PyPDF2 to open and read the PDF file from the given path.
     - Iterate over each page in the PDF.
     - Extract text from each page and concatenate it into a string.
+    - Check if the page text is not empty before appending it to the string.
+    - Append a newline character after each page to separate them.
     - Return the extracted text.
 
     Parameters:
@@ -37,19 +40,18 @@ def get_pdf_text(pdf_path: str) -> str:
     string: Text extracted from the PDF document.
     """
     raw_text = ""
-    try:
-        # Open the PDF file
-        pdf_reader = PdfReader(pdf_path)
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError("PDF file not found at the given path.")
 
-        # Iterate over each page in the PDF
-        for page in pdf_reader.pages:
-            # Extract text from the page and add it to the text string
-            page_text = page.extract_text()
-            if page_text:  # Check if the page text is not empty
-                raw_text += page_text + "\n"  # Append with a newline to separate pages
+    # Open the PDF file
+    pdf_reader = PdfReader(pdf_path)
 
-    except Exception as e:
-        print(f"Error reading PDF file: {e}")
+    # Iterate over each page in the PDF
+    for page in pdf_reader.pages:
+        # Extract text from the page and add it to the text string
+        page_text = page.extract_text()
+        if page_text:  # Check if the page text is not empty
+            raw_text += page_text + "\n"  # Append with a newline to separate pages
 
     return raw_text
 
@@ -61,7 +63,12 @@ def get_text_chunks(raw_text: str) -> List[str]:
 
     Instructions:
     - Use CharacterTextSplitter to split the raw_text into chunks.
-    - Configure the splitter with appropriate parameters like separator, chunk_size, chunk_overlap and length_function.
+    - Configure with appropriate parameters like separator, chunk_size, chunk_overlap and length_function.
+        - separator: Split the text by newline characters
+        - chunk_size: Split the text into chunks of [number] characters
+        - chunk_overlap: Keep an overlap of [number] characters between chunks
+        - length_function: Use the len function to calculate the length of each chunk
+    - Split the text into chunks by calling the split_text method of the splitter.
     - Return the list of text chunks.
 
     Parameters:
@@ -92,6 +99,9 @@ def get_vector_store(text_chunks: List[str]) -> FAISS:
     Instructions:
     - Initialize OpenAIEmbeddings to convert text chunks into embeddings.
     - Use FAISS to create a vector store from these embeddings.
+    - Configure with appropriate parameters like texts and embedding.
+        - texts: The list of text chunks to be converted into embeddings.
+        - embedding: The OpenAIEmbeddings instance to be used for converting text into embeddings.
     - Return the FAISS vector store containing the embeddings.
 
     Parameters:
