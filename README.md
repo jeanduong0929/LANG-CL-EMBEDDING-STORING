@@ -68,8 +68,6 @@ Implement get_text_chunks: Split the raw text into smaller chunks for efficient 
 
 Implement get_vector_store: Convert the text chunks into embeddings using OpenAIEmbeddings and store these in a FAISS vector store for fast retrieval.
 
-Implement get_conversation_chain: Create a conversation chain using ChatOpenAI for the chat model and the previously created vector store for data retrieval.
-
 ### Completion Criteria:
 - Complete the 'TODO' methods as outlined in the lab documents.
 - To successfully finish the lab, pass all tests in the tests/test_lab.py file.
