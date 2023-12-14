@@ -27,7 +27,7 @@ def get_pdf_text(pdf_path: str) -> str:
     Instructions:
     - Use PyPDF2 to open and read the PDF file from the given path.
     - Iterate over each page in the PDF.
-    - Extract text from each page and concatenate it into a single string.
+    - Extract text from each page and concatenate it into a string.
     - Return the extracted text.
 
     Parameters:
@@ -36,8 +36,22 @@ def get_pdf_text(pdf_path: str) -> str:
     Returns:
     string: Text extracted from the PDF document.
     """
-    # Implement your code here
-    raise NotImplementedError("This function is not yet implemented.")
+    raw_text = ""
+    try:
+        # Open the PDF file
+        pdf_reader = PdfReader(pdf_path)
+
+        # Iterate over each page in the PDF
+        for page in pdf_reader.pages:
+            # Extract text from the page and add it to the text string
+            page_text = page.extract_text()
+            if page_text:  # Check if the page text is not empty
+                raw_text += page_text + "\n"  # Append with a newline to separate pages
+
+    except Exception as e:
+        print(f"Error reading PDF file: {e}")
+
+    return raw_text
 
 
 def get_text_chunks(raw_text: str) -> List[str]:
@@ -47,7 +61,7 @@ def get_text_chunks(raw_text: str) -> List[str]:
 
     Instructions:
     - Use CharacterTextSplitter to split the raw_text into chunks.
-    - Configure the splitter with appropriate parameters like chunk_size and chunk_overlap.
+    - Configure the splitter with appropriate parameters like separator, chunk_size, chunk_overlap and length_function.
     - Return the list of text chunks.
 
     Parameters:
@@ -56,8 +70,19 @@ def get_text_chunks(raw_text: str) -> List[str]:
     Returns:
     list of strings: The text split into manageable chunks.
     """
-    # Implement your code here
-    raise NotImplementedError("This function is not yet implemented.")
+
+    text_splitter = CharacterTextSplitter(
+        separator="\n",  # Split the text by newline characters
+        chunk_size=1000,  # Split the text into chunks of 1000 characters
+        chunk_overlap=200,  # Keep an overlap of 100 characters between chunks
+        length_function=len,  # Use the len function to calculate the length of each chunk
+    )
+
+    # Split the text into chunks
+    text_chunks = text_splitter.split_text(raw_text)
+
+    # Return the list of text chunks
+    return text_chunks
 
 
 def get_vector_store(text_chunks: List[str]) -> FAISS:
@@ -75,8 +100,18 @@ def get_vector_store(text_chunks: List[str]) -> FAISS:
     Returns:
     FAISS: A FAISS vector store containing the embeddings of the text chunks.
     """
-    # Implement your code here
-    raise NotImplementedError("This function is not yet implemented.")
+
+    # Initialize OpenAIEmbeddings to convert text chunks into embeddings
+    embeddings = OpenAIEmbeddings()
+
+    # Convert the text chunks into embeddings
+    vector_store = FAISS.from_texts(
+        texts=text_chunks,
+        embedding=embeddings,
+    )
+
+    # Return the FAISS vector store containing the embeddings
+    return vector_store
 
 
 def get_conversation_chain(vector_store: FAISS) -> BaseConversationalRetrievalChain:
@@ -99,18 +134,26 @@ def get_conversation_chain(vector_store: FAISS) -> BaseConversationalRetrievalCh
         temperature=0  # Feel free to change the temperature setting. Closer to 0 is more deterministic while closer to 1 is more random.
     )
 
+    # Set up memory buffer for the conversation chain
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    # Create a conversation chain that uses the language model and vector store for retrieving information
     conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vector_store.as_retriever(),
-        memory=memory,
+        llm=llm,  # language model for generating responses
+        retriever=vector_store.as_retriever(),  # vector store for fetching relevant information
+        memory=memory,  # memory buffer for storing conversation history
     )
+
+    # Return the conversation chain
     return conversation_chain
 
 
 # ------------------------------------------------------------------------------
 # Starter Code - TOUCH AT YOUR OWN RISK!
 # ------------------------------------------------------------------------------
+
+
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 # Main application function
@@ -144,11 +187,13 @@ def main():
 
     # Example conversation loop
     while True:
-        user_input = input("Ask a question (or type 'exit' to stop): ")
+        clear_screen()
+        user_input = input("Ask a question about the PDF (or type 'exit' to stop): ")
         if user_input.lower() == "exit":
             break
         response = conversation_chain({"question": user_input})
-        print(response.get("answer", "No response generated."))
+        print(f"\nResponse: {response.get('answer', 'No response generated.')}")
+        input("\nPress Enter to continue...")
 
 
 if __name__ == "__main__":
