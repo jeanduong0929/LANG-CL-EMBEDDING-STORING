@@ -25,9 +25,12 @@ def get_pdf_text(pdf_path: str) -> str:
     The text from the PDF file should be extracted and returned as a string.
 
     Instructions:
+    - Raise a FileNotFoundError if the PDF file is not found at the given path.
     - Use PyPDF2 to open and read the PDF file from the given path.
     - Iterate over each page in the PDF.
-    - Extract text from each page and concatenate it into a single string.
+    - Extract text from each page and concatenate it into a string.
+    - Check if the page text is not empty before appending it to the string.
+    - Append a newline character after each page to separate them.
     - Return the extracted text.
 
     Parameters:
@@ -47,7 +50,12 @@ def get_text_chunks(raw_text: str) -> List[str]:
 
     Instructions:
     - Use CharacterTextSplitter to split the raw_text into chunks.
-    - Configure the splitter with appropriate parameters like chunk_size and chunk_overlap.
+    - Configure with appropriate parameters like separator, chunk_size, chunk_overlap and length_function.
+        - separator: Split the text by newline characters
+        - chunk_size: Split the text into chunks of [number] characters
+        - chunk_overlap: Keep an overlap of [number] characters between chunks
+        - length_function: Use the len function to calculate the length of each chunk
+    - Split the text into chunks by calling the split_text method of the splitter.
     - Return the list of text chunks.
 
     Parameters:
@@ -67,6 +75,9 @@ def get_vector_store(text_chunks: List[str]) -> FAISS:
     Instructions:
     - Initialize OpenAIEmbeddings to convert text chunks into embeddings.
     - Use FAISS to create a vector store from these embeddings.
+    - Configure with appropriate parameters like texts and embedding.
+        - texts: The list of text chunks to be converted into embeddings.
+        - embedding: The OpenAIEmbeddings instance to be used for converting text into embeddings.
     - Return the FAISS vector store containing the embeddings.
 
     Parameters:
@@ -99,18 +110,33 @@ def get_conversation_chain(vector_store: FAISS) -> BaseConversationalRetrievalCh
         temperature=0  # Feel free to change the temperature setting. Closer to 0 is more deterministic while closer to 1 is more random.
     )
 
+    # Set up memory buffer for the conversation chain
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    # Create a conversation chain that uses the language model and vector store for retrieving information
     conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vector_store.as_retriever(),
-        memory=memory,
+        llm=llm,  # language model for generating responses
+        retriever=vector_store.as_retriever(),  # vector store for fetching relevant information
+        memory=memory,  # memory buffer for storing conversation history
     )
+
+    # Return the conversation chain
     return conversation_chain
 
 
 # ------------------------------------------------------------------------------
 # Starter Code - TOUCH AT YOUR OWN RISK!
 # ------------------------------------------------------------------------------
+
+
+def clear_screen():
+    """
+    Clears the terminal screen.
+
+    This function uses a system call to clear the terminal screen. The command
+    differs depending on the operating system: 'cls' for Windows ('nt') and 'clear'
+    for Unix/Linux.
+    """
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 # Main application function
@@ -144,11 +170,13 @@ def main():
 
     # Example conversation loop
     while True:
-        user_input = input("Ask a question (or type 'exit' to stop): ")
+        clear_screen()
+        user_input = input("Ask a question about the PDF (or type 'exit' to stop): ")
         if user_input.lower() == "exit":
             break
         response = conversation_chain({"question": user_input})
-        print(response.get("answer", "No response generated."))
+        print(f"\nResponse: {response.get('answer', 'No response generated.')}")
+        input("\nPress Enter to continue...")
 
 
 if __name__ == "__main__":
